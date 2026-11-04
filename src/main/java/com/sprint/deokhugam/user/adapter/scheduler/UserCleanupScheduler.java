@@ -1,10 +1,11 @@
 package com.sprint.deokhugam.user.adapter.scheduler;
 
-import com.sprint.deokhugam.user.application.provided.command.UserCleaner;
-import java.time.Duration;
-import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.job.Job;
+import org.springframework.batch.core.job.parameters.JobParameters;
+import org.springframework.batch.core.job.parameters.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobOperator;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -13,11 +14,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class UserCleanupScheduler {
 
-  private final UserCleaner userCleaner;
+  private final JobOperator jobOperator;
+  private final Job userCleanupJob;
 
   @Scheduled(cron = "0 */5 * * * *", zone = "Asia/Seoul")
   public void cleanup() {
-    Instant cutoff = Instant.now().minus(Duration.ofMinutes(5));
-    userCleaner.cleanup(cutoff);
+    JobParameters parameters =
+        new JobParametersBuilder()
+            .addLong("requestedAt", System.currentTimeMillis())
+            .toJobParameters();
+
+    try {
+      jobOperator.start(userCleanupJob, parameters);
+    } catch (Exception e) {
+      log.error("유저 삭제 실패 ", e);
+    }
   }
 }

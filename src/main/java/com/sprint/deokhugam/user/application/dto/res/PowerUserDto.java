@@ -1,4 +1,4 @@
-package com.sprint.deokhugam.user.application.dto;
+package com.sprint.deokhugam.user.application.dto.res;
 
 import com.sprint.deokhugam.user.domain.ranking.RankingPeriod;
 import java.time.Instant;

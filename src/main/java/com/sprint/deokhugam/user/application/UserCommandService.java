@@ -2,12 +2,12 @@ package com.sprint.deokhugam.user.application;
 
 import com.sprint.deokhugam.common.exception.BusinessException;
 import com.sprint.deokhugam.common.exception.CommonErrorCode;
-import com.sprint.deokhugam.user.application.dto.UserDto;
-import com.sprint.deokhugam.user.application.dto.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.req.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.res.UserDto;
 import com.sprint.deokhugam.user.application.provided.command.UserActivityCommand;
 import com.sprint.deokhugam.user.application.provided.command.UserCommand;
 import com.sprint.deokhugam.user.application.required.PasswordHasher;
-import com.sprint.deokhugam.user.application.required.UserRepository;
+import com.sprint.deokhugam.user.application.required.UserRepositoryPort;
 import com.sprint.deokhugam.user.domain.Email;
 import com.sprint.deokhugam.user.domain.Password;
 import com.sprint.deokhugam.user.domain.User;
@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserCommandService implements UserCommand, UserActivityCommand {
 
-  private final UserRepository userRepository;
+  private final UserRepositoryPort userRepositoryPort;
   private final PasswordHasher passwordHasher;
 
   private static final ZoneId SEOUL = ZoneId.of("Asia/Seoul");
@@ -43,7 +43,7 @@ public class UserCommandService implements UserCommand, UserActivityCommand {
   public UserDto save(UserRegisterRequest request) {
     Email email = Email.to(request.email());
 
-    if (userRepository.existsByEmail(email)) {
+    if (userRepositoryPort.existsByEmail(email)) {
       throw new BusinessException(UserErrorCode.DUPLICATE_EMAIL);
     }
 
@@ -52,7 +52,7 @@ public class UserCommandService implements UserCommand, UserActivityCommand {
     String nickname = request.nickname();
     User user = User.create(nickname, email, password);
     user.initializeRankingStats(LocalDate.now(SEOUL));
-    userRepository.save(user);
+    userRepositoryPort.save(user);
     return UserDto.to(
         user.getId(), user.getEmail().value(), user.getNickname(), user.getCreatedAt());
   }
@@ -69,7 +69,7 @@ public class UserCommandService implements UserCommand, UserActivityCommand {
 
   @Override
   public void delete(UUID userId) {
-    userRepository.remove(userId);
+    userRepositoryPort.remove(userId);
   }
 
   @Override
@@ -86,7 +86,7 @@ public class UserCommandService implements UserCommand, UserActivityCommand {
 
   private @NonNull User getUser(UUID userId) {
     User user =
-        userRepository
+        userRepositoryPort
             .findById(userId)
             .filter(find -> !find.isDeleted())
             .orElseThrow(() -> new BusinessException(UserErrorCode.NOT_FOUND));
@@ -145,7 +145,7 @@ public class UserCommandService implements UserCommand, UserActivityCommand {
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void closeRanking(UUID userId, LocalDate date) {
     User user =
-        userRepository
+        userRepositoryPort
             .findById(userId)
             .orElseThrow(() -> new IllegalStateException("마감 대상 유저가 없습니다: " + userId));
 
@@ -164,7 +164,7 @@ public class UserCommandService implements UserCommand, UserActivityCommand {
       Predicate<Period> condition,
       UnaryOperator<UserActivityMetrics> updater) {
     User user =
-        userRepository
+        userRepositoryPort
             .findById(userId)
             .orElseThrow(() -> new BusinessException(CommonErrorCode.INVALID_INPUT));
 

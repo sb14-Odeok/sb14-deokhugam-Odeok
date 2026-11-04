@@ -1,4 +1,4 @@
-package com.sprint.deokhugam.user.application.dto;
+package com.sprint.deokhugam.user.application.dto.req;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

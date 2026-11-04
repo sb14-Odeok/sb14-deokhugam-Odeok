@@ -1,5 +1,6 @@
 package com.sprint.deokhugam.notification;
 
+import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
 import com.sprint.deokhugam.notification.application.provided.command.NotificationCommand;
 import com.sprint.deokhugam.review.application.provided.query.ReviewFinder;
 import com.sprint.deokhugam.review.domain.Review;
@@ -26,5 +27,12 @@ public class NotificationApplicationService {
   public void notifyLike(UUID reviewId, String nickName) {
     Review review = reviewFinder.getByIdOrThrow(reviewId);
     notificationCommand.createLike(review, review.getUser(), nickName);
+  }
+
+  @Transactional(propagation = Propagation.REQUIRES_NEW)
+  public void notifyRanked(UUID reviewId, PopularReviewPeriod period, long rank) {
+    Review review = reviewFinder.getByIdOrThrow(reviewId);
+
+    notificationCommand.createRank(review, review.getUser(), period, rank);
   }
 }

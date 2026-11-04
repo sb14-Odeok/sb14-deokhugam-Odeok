@@ -66,7 +66,7 @@ public class CommentCommandServiceTest {
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
     given(reviewFinder.getByIdOrThrow(reviewId)).willReturn(review);
-    given(userFinder.findById(userId)).willReturn(user);
+    given(userFinder.findByIdOrThrow(userId)).willReturn(user);
     given(review.getUser()).willReturn(user);
 
     Comment comment = Comment.create(review, user, createRequest.content());
@@ -88,7 +88,8 @@ public class CommentCommandServiceTest {
     CommentCreateRequest createRequest =
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
-    given(userFinder.findById(userId)).willThrow(new BusinessException(UserErrorCode.NOT_FOUND));
+    given(userFinder.findByIdOrThrow(userId))
+        .willThrow(new BusinessException(UserErrorCode.NOT_FOUND));
 
     // When & Then
     assertThatThrownBy(() -> commentApplicationService.create(createRequest))

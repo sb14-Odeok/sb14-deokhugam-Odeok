@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 public class ReviewApplicationServiceSoftDeleteTest {
+
   @Mock UserFinder userFinder;
   @Mock ReviewRepositoryPort reviewRepositoryPort;
   @Mock BookReviewStatsCommand bookReviewStatsCommand;
@@ -69,7 +70,7 @@ public class ReviewApplicationServiceSoftDeleteTest {
   @Test
   void 리뷰_논리삭제_성공() {
     // given
-    when(userFinder.findById(userId)).thenReturn(user);
+    when(userFinder.findByIdOrThrow(userId)).thenReturn(user);
     when(reviewRepositoryPort.getByIdOrThrow(reviewId)).thenReturn(review);
 
     // when

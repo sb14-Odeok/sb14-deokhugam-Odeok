@@ -1,6 +1,7 @@
 package com.sprint.deokhugam.notification.application;
 
 import com.sprint.deokhugam.common.exception.BusinessException;
+import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
 import com.sprint.deokhugam.notification.application.dto.NotificationDto;
 import com.sprint.deokhugam.notification.application.provided.command.NotificationCleaner;
 import com.sprint.deokhugam.notification.application.provided.command.NotificationCommand;
@@ -57,6 +58,14 @@ public class NotificationCommandService implements NotificationCommand, Notifica
             notification.getCreatedAt(),
             notification.getUpdatedAt());
     return notificationDto;
+  }
+
+  @Override
+  public void createRank(Review review, User user, PopularReviewPeriod period, long rank) {
+    Notification notification =
+        Notification.createRanked(user, review, review.getContent(), period, rank);
+
+    notificationPersistencePort.save(notification);
   }
 
   @Override

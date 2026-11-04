@@ -9,7 +9,7 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.deokhugam.common.exception.BusinessException;
 import com.sprint.deokhugam.common.exception.CommonErrorCode;
 import com.sprint.deokhugam.user.application.dto.PowerUserCursor;
-import com.sprint.deokhugam.user.application.dto.PowerUserSearchCond;
+import com.sprint.deokhugam.user.application.dto.req.PowerUserSearchCond;
 import com.sprint.deokhugam.user.domain.User;
 import com.sprint.deokhugam.user.domain.ranking.RankingPeriod;
 import java.time.Instant;

@@ -1,8 +1,8 @@
 package com.sprint.deokhugam.user.adapter.persistence;
 
 import com.sprint.deokhugam.user.application.dto.PowerUserCursor;
-import com.sprint.deokhugam.user.application.dto.PowerUserSearchCond;
-import com.sprint.deokhugam.user.application.required.UserRepository;
+import com.sprint.deokhugam.user.application.dto.req.PowerUserSearchCond;
+import com.sprint.deokhugam.user.application.required.UserRepositoryPort;
 import com.sprint.deokhugam.user.domain.Email;
 import com.sprint.deokhugam.user.domain.User;
 import java.time.Instant;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class UserRepositoryAdapter implements UserRepository {
+public class UserRepositoryPortAdapter implements UserRepositoryPort {
 
   private final UserJpaRepository userJpaRepository;
   private final UserQuerydslRepository querydslRepository;

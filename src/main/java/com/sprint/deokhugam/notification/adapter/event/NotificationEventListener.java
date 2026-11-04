@@ -20,6 +20,8 @@ public class NotificationEventListener {
           notificationApplicationService.notifyComment(e.reviewId(), e.actorName());
       case NotifyEvent.Like e ->
           notificationApplicationService.notifyLike(e.reviewId(), e.actorName());
+      case NotifyEvent.Ranked e ->
+          notificationApplicationService.notifyRanked(e.reviewId(), e.period(), e.rank());
     }
   }
 }

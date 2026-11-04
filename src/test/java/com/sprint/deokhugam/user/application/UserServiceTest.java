@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.user.application.dto.UserDto;
-import com.sprint.deokhugam.user.application.dto.UserLoginRequest;
-import com.sprint.deokhugam.user.application.dto.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.req.UserLoginRequest;
+import com.sprint.deokhugam.user.application.dto.req.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.res.UserDto;
 import com.sprint.deokhugam.user.application.provided.command.UserCommand;
 import com.sprint.deokhugam.user.application.provided.query.UserFinder;
 import com.sprint.deokhugam.user.application.provided.query.UserLogin;
@@ -52,7 +52,7 @@ class UserServiceTest {
   @Test
   void findById() {
     // when
-    User finderById = userFinder.findById(user.id());
+    User finderById = userFinder.findByIdOrThrow(user.id());
 
     // then
     assertThat(finderById).isNotNull();

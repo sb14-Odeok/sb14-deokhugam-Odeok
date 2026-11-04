@@ -11,9 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @Transactional
-class UserRepositoryTest {
+class UserRepositoryPortTest {
 
-  @Autowired UserRepository userRepository;
+  @Autowired UserRepositoryPort userRepositoryPort;
 
   @Test
   public void 계정생성_테스트() throws Exception {
@@ -22,7 +22,7 @@ class UserRepositoryTest {
     Password password = Password.to("abcd1234!");
     User user = User.create("tester", email, password);
     // when
-    User findUser = userRepository.save(user);
+    User findUser = userRepositoryPort.save(user);
     // then
     Assertions.assertThat(findUser.getId()).isEqualTo(user.getId());
   }

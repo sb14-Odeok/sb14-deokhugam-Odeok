@@ -21,7 +21,7 @@ public class UserRankingScheduler {
   private final UserFinder userFinder;
   private final UserActivityCommand userCommand;
 
-  @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
+  @Scheduled(cron = "0 */5 * * * *", zone = "Asia/Seoul")
   public void closeRanking() {
     LocalDate today = LocalDate.now(SEOUL);
     List<UUID> targetIds = userFinder.findRankingTargetIds();

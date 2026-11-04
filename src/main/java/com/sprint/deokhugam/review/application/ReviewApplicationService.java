@@ -50,7 +50,7 @@ public class ReviewApplicationService implements ReviewUseCase {
   @Override
   @Transactional
   public ReviewResponse createReview(CreateReviewCommand command) {
-    User user = userFinder.findById(command.userId());
+    User user = userFinder.findByIdOrThrow(command.userId());
     Book book = bookFinder.findById(command.bookId());
 
     Review review = Review.create(command.rating(), command.content(), user, book);
@@ -78,7 +78,7 @@ public class ReviewApplicationService implements ReviewUseCase {
   @Override
   @Transactional
   public ReviewResponse updateReview(UUID userId, UUID reviewId, String newContent, int newRating) {
-    userFinder.findById(userId);
+    userFinder.findByIdOrThrow(userId);
     Review review = reviewRepositoryPort.getByIdOrThrow(reviewId);
 
     if (!review.verifyReviewUpdate(userId)) {
@@ -120,7 +120,7 @@ public class ReviewApplicationService implements ReviewUseCase {
   @Override
   @Transactional
   public ReviewLikeResponse toggleLike(UUID reviewId, UUID requestUserId) {
-    User user = userFinder.findById(requestUserId);
+    User user = userFinder.findByIdOrThrow(requestUserId);
     Review review = reviewRepositoryPort.getByIdOrThrow(reviewId);
 
     Optional<ReviewLike> foundReviewLike =
@@ -149,7 +149,7 @@ public class ReviewApplicationService implements ReviewUseCase {
   @Override
   @Transactional
   public void softDeleteReview(UUID reviewId, UUID requestUserId) {
-    userFinder.findById(requestUserId);
+    userFinder.findByIdOrThrow(requestUserId);
     Review review = reviewRepositoryPort.getByIdOrThrow(reviewId);
 
     if (!review.verifyReviewUpdate(requestUserId)) {
@@ -169,7 +169,7 @@ public class ReviewApplicationService implements ReviewUseCase {
   @Override
   @Transactional
   public void hardDeleteReview(UUID reviewId, UUID requestUserId) {
-    userFinder.findById(requestUserId);
+    userFinder.findByIdOrThrow(requestUserId);
     Review review =
         reviewRepositoryPort
             .getByIdIncludingDeleted(reviewId)

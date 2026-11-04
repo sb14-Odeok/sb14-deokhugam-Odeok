@@ -47,7 +47,7 @@ public class CommentApplicationService implements CommentUseCase {
   @Transactional
   public CommentDto create(CommentCreateRequest createRequest) {
     Review review = reviewFinder.getByIdOrThrow(createRequest.reviewId());
-    User user = userFinder.findById(createRequest.userId());
+    User user = userFinder.findByIdOrThrow(createRequest.userId());
 
     Comment comment = Comment.create(review, user, createRequest.content());
     Comment savedComment = commentCommand.createComment(comment);

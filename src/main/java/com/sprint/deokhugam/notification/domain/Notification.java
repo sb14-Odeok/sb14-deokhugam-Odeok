@@ -3,6 +3,7 @@ package com.sprint.deokhugam.notification.domain;
 import static jakarta.persistence.FetchType.LAZY;
 
 import com.sprint.deokhugam.common.entity.BaseSoftDeletableEntity;
+import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
 import com.sprint.deokhugam.review.domain.Review;
 import com.sprint.deokhugam.user.domain.User;
 import jakarta.persistence.Column;
@@ -55,10 +56,10 @@ public class Notification extends BaseSoftDeletableEntity {
   private Instant confirmedAt;
 
   private Notification(
-      User user, Review review, String reviewContent, NotificationType type, String nickname) {
+      User user, Review review, String reviewContent, NotificationType type, String value) {
     this.user = user;
     this.review = review;
-    this.message = type.format(nickname);
+    this.message = type.format(value);
     this.reviewContent = reviewContent;
     this.type = type;
     this.confirmed = false;
@@ -72,6 +73,20 @@ public class Notification extends BaseSoftDeletableEntity {
   public static Notification createComment(
       User user, Review review, String reviewContent, String actorNickname) {
     return new Notification(user, review, reviewContent, NotificationType.COMMENT, actorNickname);
+  }
+
+  public static Notification createRanked(
+      User user, Review review, String reviewContent, PopularReviewPeriod period, long rank) {
+    String periodName =
+        switch (period) {
+          case DAILY -> "일간";
+          case WEEKLY -> "주간";
+          case MONTHLY -> "월간";
+          case ALL_TIME -> "전체 기간";
+        };
+    String description = "%s 인기 리뷰 %d위".formatted(periodName, rank);
+
+    return new Notification(user, review, reviewContent, NotificationType.RANKED, description);
   }
 
   public void confirm() {

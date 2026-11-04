@@ -2,12 +2,12 @@ package com.sprint.deokhugam.user.adapter.web;
 
 import com.sprint.deokhugam.common.pagination.CursorPageResponse;
 import com.sprint.deokhugam.common.web.annotation.RequestHeader;
-import com.sprint.deokhugam.user.application.dto.PowerUserDto;
-import com.sprint.deokhugam.user.application.dto.PowerUserSearchCond;
-import com.sprint.deokhugam.user.application.dto.UserDto;
-import com.sprint.deokhugam.user.application.dto.UserLoginRequest;
-import com.sprint.deokhugam.user.application.dto.UserRegisterRequest;
-import com.sprint.deokhugam.user.application.dto.UserUpdateRequest;
+import com.sprint.deokhugam.user.application.dto.req.PowerUserSearchCond;
+import com.sprint.deokhugam.user.application.dto.req.UserLoginRequest;
+import com.sprint.deokhugam.user.application.dto.req.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.req.UserUpdateRequest;
+import com.sprint.deokhugam.user.application.dto.res.PowerUserDto;
+import com.sprint.deokhugam.user.application.dto.res.UserDto;
 import com.sprint.deokhugam.user.application.provided.command.UserCommand;
 import com.sprint.deokhugam.user.application.provided.query.UserFinder;
 import com.sprint.deokhugam.user.application.provided.query.UserLogin;
@@ -53,7 +53,7 @@ public class UserApiController {
 
   @GetMapping("/{userId}")
   public ResponseEntity<UserDto> getUser(@PathVariable UUID userId) {
-    UserDto userDto = userFinder.getById(userId);
+    UserDto userDto = userFinder.getUserDetail(userId);
     return ResponseEntity.ok(userDto);
   }
 

@@ -31,6 +31,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewLikeUseCaseTest {
+
   @Mock ReviewLikeRepositoryPort reviewLikeRepositoryPort;
   @Mock ReviewRepositoryPort reviewRepositoryPort;
   @Mock UserFinder userFinder;
@@ -61,7 +62,7 @@ class ReviewLikeUseCaseTest {
   @Test
   void 리뷰좋아요_새로_생성될경우() {
     // given
-    when(userFinder.findById(userId)).thenReturn(user);
+    when(userFinder.findByIdOrThrow(userId)).thenReturn(user);
     when(reviewRepositoryPort.getByIdOrThrow(reviewId)).thenReturn(review);
     when(reviewLikeRepositoryPort.getByUserIdAndReviewId(userId, reviewId))
         .thenReturn(Optional.empty());
@@ -83,7 +84,7 @@ class ReviewLikeUseCaseTest {
     ReviewLike existing = ReviewLike.init(review, user);
     review.increaseLikeCount();
 
-    when(userFinder.findById(userId)).thenReturn(user);
+    when(userFinder.findByIdOrThrow(userId)).thenReturn(user);
     when(reviewRepositoryPort.getByIdOrThrow(reviewId)).thenReturn(review);
     when(reviewLikeRepositoryPort.getByUserIdAndReviewId(userId, reviewId))
         .thenReturn(Optional.of(existing));

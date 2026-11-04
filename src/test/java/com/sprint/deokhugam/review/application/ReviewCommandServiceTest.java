@@ -76,7 +76,7 @@ class ReviewCommandServiceTest {
     book = mock(Book.class);
     when(user.getId()).thenReturn(userId);
     when(book.getId()).thenReturn(bookId);
-    when(userFinder.findById(userId)).thenReturn(user);
+    when(userFinder.findByIdOrThrow(userId)).thenReturn(user);
     when(bookFinder.findById(bookId)).thenReturn(book);
     review = Review.create(5, "굳", user, book);
   }

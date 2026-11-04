@@ -9,11 +9,16 @@ import com.sprint.deokhugam.dashboard.review.application.required.PopularReviewP
 import com.sprint.deokhugam.dashboard.review.application.required.PopularReviewSearchPort;
 import com.sprint.deokhugam.dashboard.review.domain.PopularReview;
 import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
+import com.sprint.deokhugam.notification.domain.NotifyEvent;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +28,12 @@ public class PopularReviewApplicationService implements PopularReviewUseCase {
 
   static final int MAX_RANK = 20;
 
+  // 알림용 상수 추가
+  static final int NOTIFICATION_LIMIT = 10;
+
   private final PopularReviewSearchPort searchPort;
   private final PopularReviewPersistencePort persistencePort;
+  private final ApplicationEventPublisher eventPublisher;
 
   @Override
   @Transactional(readOnly = true)
@@ -54,6 +63,9 @@ public class PopularReviewApplicationService implements PopularReviewUseCase {
     PopularReviewPeriod.Range range = period.rangeOf(baseDate);
     List<ReviewActivity> activities = searchPort.findReviewActivities(range);
 
+    Set<UUID> previousIds =
+        new HashSet<>(searchPort.findReviewsForNotify(period, NOTIFICATION_LIMIT));
+
     // 좋아요/댓글이 하나도 없는 리뷰는 빼고, 점수 높은 순, 같으면 댓글 많은 순
     List<ReviewActivity> top =
         // 데이터의 흐름
@@ -72,6 +84,17 @@ public class PopularReviewApplicationService implements PopularReviewUseCase {
             // 숫자 형태의 데이터 스트림을 객체 스트림으로 변환
             .mapToObj(index -> toPopularReview(top.get(index), period, index + 1))
             .toList();
+
+    List<PopularReview> currentReviews =
+        rankings.stream()
+            .limit(NOTIFICATION_LIMIT)
+            .filter(ranking -> !previousIds.contains(ranking.getReviewId()))
+            .toList();
+
+    for (PopularReview review : currentReviews) {
+      eventPublisher.publishEvent(
+          NotifyEvent.ranked(review.getReviewId(), period, review.getRank()));
+    }
 
     persistencePort.replaceAll(period, rankings);
   }

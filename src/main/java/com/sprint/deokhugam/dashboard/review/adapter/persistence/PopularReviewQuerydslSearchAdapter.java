@@ -20,6 +20,7 @@ import com.sprint.deokhugam.dashboard.review.application.required.PopularReviewS
 import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -126,6 +127,16 @@ public class PopularReviewQuerydslSearchAdapter implements PopularReviewSearchPo
                         inPeriod(comment.createdAt, range))))
         .from(review)
         .where(review.deletedAt.isNull())
+        .fetch();
+  }
+
+  @Override
+  public List<UUID> findReviewsForNotify(PopularReviewPeriod period, int limit) {
+    return queryFactory
+        .select(popularReview.reviewId)
+        .from(popularReview)
+        .where(popularReview.period.eq(period).and(popularReview.rank.between(1L, limit)))
+        .orderBy(popularReview.rank.asc())
         .fetch();
   }
 

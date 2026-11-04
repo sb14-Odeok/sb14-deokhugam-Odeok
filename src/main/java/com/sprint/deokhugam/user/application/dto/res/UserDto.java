@@ -1,4 +1,4 @@
-package com.sprint.deokhugam.user.application.dto;
+package com.sprint.deokhugam.user.application.dto.res;
 
 import java.time.Instant;
 import java.util.UUID;

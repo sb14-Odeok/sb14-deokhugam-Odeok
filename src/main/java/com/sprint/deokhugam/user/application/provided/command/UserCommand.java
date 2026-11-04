@@ -1,7 +1,7 @@
 package com.sprint.deokhugam.user.application.provided.command;
 
-import com.sprint.deokhugam.user.application.dto.UserDto;
-import com.sprint.deokhugam.user.application.dto.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.req.UserRegisterRequest;
+import com.sprint.deokhugam.user.application.dto.res.UserDto;
 import java.util.UUID;
 
 public interface UserCommand {
