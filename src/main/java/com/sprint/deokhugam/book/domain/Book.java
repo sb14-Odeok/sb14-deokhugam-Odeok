@@ -6,10 +6,12 @@ import com.sprint.deokhugam.common.exception.CommonErrorCode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Getter
@@ -51,6 +53,12 @@ public class Book extends BaseSoftDeletableEntity {
 
   @Column(nullable = false)
   private double rating;
+
+  // 동시에 같은 도서를 고치면 나중에 커밋한 쪽이 실패해 앞의 변경을 덮어쓰지 않는다
+  @Version
+  @ColumnDefault("0")
+  @Column(nullable = false)
+  private long version;
 
   private Book(
       String title,
