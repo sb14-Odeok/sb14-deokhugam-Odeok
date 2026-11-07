@@ -14,6 +14,7 @@ import com.sprint.deokhugam.comment.application.dto.CommentCreateRequest;
 import com.sprint.deokhugam.comment.application.dto.CommentUpdateRequest;
 import com.sprint.deokhugam.comment.domain.Comment;
 import com.sprint.deokhugam.review.adapter.persistence.ReviewJpaRepository;
+import com.sprint.deokhugam.review.application.provided.command.ReviewCommand;
 import com.sprint.deokhugam.review.domain.Review;
 import com.sprint.deokhugam.user.adapter.persistence.UserJpaRepository;
 import com.sprint.deokhugam.user.domain.Email;
@@ -47,6 +48,7 @@ public class CommentIntegrationTest {
   @Autowired private ReviewJpaRepository reviewJpaRepository;
   @Autowired private UserJpaRepository userJpaRepository;
   @Autowired private CommentJpaRepository commentJpaRepository;
+  @Autowired private ReviewCommand reviewCommand;
   @Autowired private EntityManager entityManager;
 
   private Review savedReview;
@@ -82,7 +84,9 @@ public class CommentIntegrationTest {
 
     Comment comment = Comment.create(savedReview, savedUser, "testCreateContent");
     savedComment = commentJpaRepository.save(comment);
-    savedReview.increaseCommentCount();
+    flushAndClear();
+    // 저장소로 직접 넣은 댓글이라 리뷰의 댓글 수를 맞춰 준다
+    reviewCommand.increaseReviewCommentCount(savedReview.getId());
   }
 
   // 요청 결과를 DB에 반영한 뒤 JPA가 기억하던 객체를 비운다. 이후 조회가 실제 DB에서 읽도록 만든다
