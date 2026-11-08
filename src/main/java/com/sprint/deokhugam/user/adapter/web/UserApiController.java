@@ -12,6 +12,7 @@ import com.sprint.deokhugam.user.application.dto.query.LoginUserQuery;
 import com.sprint.deokhugam.user.application.dto.query.PowerUserSearchCond;
 import com.sprint.deokhugam.user.application.dto.result.PowerUserResult;
 import com.sprint.deokhugam.user.application.dto.result.UserResult;
+import com.sprint.deokhugam.user.application.provided.command.UserCleanupUseCase;
 import com.sprint.deokhugam.user.application.provided.command.UserCommand;
 import com.sprint.deokhugam.user.application.provided.query.UserFinder;
 import com.sprint.deokhugam.user.application.provided.query.UserLogin;
@@ -43,6 +44,13 @@ public class UserApiController {
   private final UserCommand userCommand;
   private final UserLogin userLogin;
   private final UserFinder userFinder;
+  private final UserCleanupUseCase userCleanupUseCase;
+
+  @DeleteMapping("/hard/{userId}")
+  public ResponseEntity<Void> hardDelete(@PathVariable UUID userId) {
+    userCleanupUseCase.cleanupUserWithRelatedData(userId);
+    return ResponseEntity.noContent().build();
+  }
 
   @PostMapping
   public ResponseEntity<UserResponse> register(@Valid @RequestBody UserRegisterRequest request) {

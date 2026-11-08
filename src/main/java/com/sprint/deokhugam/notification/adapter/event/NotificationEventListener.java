@@ -1,6 +1,6 @@
 package com.sprint.deokhugam.notification.adapter.event;
 
-import com.sprint.deokhugam.notification.NotificationApplicationService;
+import com.sprint.deokhugam.notification.application.NotificationApplicationService;
 import com.sprint.deokhugam.notification.domain.NotifyEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

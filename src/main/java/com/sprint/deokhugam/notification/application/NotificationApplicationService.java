@@ -1,4 +1,4 @@
-package com.sprint.deokhugam.notification;
+package com.sprint.deokhugam.notification.application;
 
 import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
 import com.sprint.deokhugam.notification.application.provided.command.NotificationCommand;

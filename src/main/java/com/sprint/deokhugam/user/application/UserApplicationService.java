@@ -1,4 +1,4 @@
-package com.sprint.deokhugam.user;
+package com.sprint.deokhugam.user.application;
 
 import com.sprint.deokhugam.comment.application.provided.CommentUseCase;
 import com.sprint.deokhugam.notification.application.provided.command.NotificationCleaner;
