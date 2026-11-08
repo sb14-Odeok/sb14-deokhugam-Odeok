@@ -9,8 +9,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import com.sprint.deokhugam.book.domain.exception.BookErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.book.exception.BookErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;

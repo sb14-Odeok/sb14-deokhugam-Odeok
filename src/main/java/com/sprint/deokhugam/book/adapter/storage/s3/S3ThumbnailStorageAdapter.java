@@ -1,8 +1,8 @@
 package com.sprint.deokhugam.book.adapter.storage.s3;
 
 import com.sprint.deokhugam.book.application.required.ThumbnailStoragePort;
+import com.sprint.deokhugam.book.domain.exception.BookErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.book.exception.BookErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

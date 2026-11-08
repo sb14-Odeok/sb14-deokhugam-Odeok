@@ -4,8 +4,8 @@ import com.sprint.deokhugam.book.application.dto.BookInfoDto;
 import com.sprint.deokhugam.book.application.provided.query.BookInfoFinder;
 import com.sprint.deokhugam.book.application.required.BookProviderPort;
 import com.sprint.deokhugam.book.domain.Isbn;
+import com.sprint.deokhugam.book.domain.exception.BookErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.book.exception.BookErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

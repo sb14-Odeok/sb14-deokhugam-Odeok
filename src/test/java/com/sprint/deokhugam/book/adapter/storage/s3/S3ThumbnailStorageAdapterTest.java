@@ -8,8 +8,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.sprint.deokhugam.book.domain.exception.BookErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.book.exception.BookErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

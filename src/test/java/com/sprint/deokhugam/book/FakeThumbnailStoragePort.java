@@ -1,8 +1,8 @@
 package com.sprint.deokhugam.book;
 
 import com.sprint.deokhugam.book.application.required.ThumbnailStoragePort;
+import com.sprint.deokhugam.book.domain.exception.BookErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.book.exception.BookErrorCode;
 import java.util.ArrayList;
 import java.util.List;
 
