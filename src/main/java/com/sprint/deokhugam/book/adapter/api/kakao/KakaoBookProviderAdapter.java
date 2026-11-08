@@ -3,6 +3,7 @@ package com.sprint.deokhugam.book.adapter.api.kakao;
 import com.sprint.deokhugam.book.application.dto.BookInfoDto;
 import com.sprint.deokhugam.book.application.required.BookProviderPort;
 import com.sprint.deokhugam.book.domain.Isbn;
+import java.io.IOException;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -20,10 +22,11 @@ import org.springframework.web.client.RestClientException;
 @RequiredArgsConstructor
 public class KakaoBookProviderAdapter implements BookProviderPort {
 
-  private final RestClient kakaoClient;
+  // 표지 하나가 2MB를 넘을 일이 없어서, 넘으면 이상한 응답으로 보고 버린다
+  private static final int MAX_THUMBNAIL_BYTES = 2_000_000;
 
-  // 썸네일은 카카오 API가 아닌 이미지 서버에서 받으므로 인증 헤더 없는 클라이언트를 따로 쓴다
-  private final RestClient imageClient = RestClient.create();
+  private final RestClient kakaoClient;
+  private final RestClient thumbnailClient;
 
   @Override
   public Optional<BookInfoDto> findByIsbn(Isbn isbn) {
@@ -51,11 +54,33 @@ public class KakaoBookProviderAdapter implements BookProviderPort {
     }
     try {
       // 카카오 URL은 fname 값이 이미 인코딩돼 있다. 문자열로 넘기면 한 번 더 인코딩돼 403이 난다
-      return imageClient.get().uri(URI.create(url)).retrieve().body(byte[].class);
+      return thumbnailClient
+          .get()
+          .uri(URI.create(url))
+          .exchange((request, response) -> readThumbnail(url, response));
     } catch (RestClientException e) {
       log.warn("썸네일 받기 실패: {} ({})", url, e.getMessage());
       return null;
     }
+  }
+
+  // 크기를 모르는 채로 다 읽지 않는다. Content-Length가 없으면 상한보다 1바이트만 더 읽어 본다
+  private byte[] readThumbnail(String url, ClientHttpResponse response) throws IOException {
+    if (!response.getStatusCode().is2xxSuccessful()) {
+      log.warn("썸네일 받기 실패: {} ({})", url, response.getStatusCode());
+      return null;
+    }
+    long length = response.getHeaders().getContentLength();
+    if (length > MAX_THUMBNAIL_BYTES) {
+      log.warn("썸네일 크기 초과: {} ({}바이트)", url, length);
+      return null;
+    }
+    byte[] bytes = response.getBody().readNBytes(MAX_THUMBNAIL_BYTES + 1);
+    if (bytes.length > MAX_THUMBNAIL_BYTES) {
+      log.warn("썸네일 크기 초과: {} (Content-Length 없음)", url);
+      return null;
+    }
+    return bytes;
   }
 
   private BookInfoDto toDto(KakaoBookResponse.Document doc, byte[] thumbnail) {

@@ -10,6 +10,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import com.sprint.deokhugam.book.application.dto.BookInfoDto;
 import com.sprint.deokhugam.book.domain.Isbn;
 import com.sun.net.httpserver.HttpServer;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.time.LocalDate;
@@ -33,7 +34,8 @@ class KakaoBookProviderAdapterTest {
           .baseUrl("https://dapi.kakao.com")
           .defaultHeader("Authorization", "KakaoAK test-key");
   private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-  private final KakaoBookProviderAdapter adapter = new KakaoBookProviderAdapter(builder.build());
+  private final KakaoBookProviderAdapter adapter =
+      new KakaoBookProviderAdapter(builder.build(), new KakaoClientConfig().thumbnailClient());
 
   // 카카오 실제 응답 모양. price처럼 안 쓰는 필드도 섞어서 무시되는지 본다
   private static String kakaoJson(String thumbnail) {
@@ -169,5 +171,54 @@ class KakaoBookProviderAdapterTest {
     assertThat(result).isPresent();
     assertThat(result.get().title()).isEqualTo("클린 코드");
     assertThat(result.get().thumbnailImage()).isNull();
+  }
+
+  @Test
+  @DisplayName("Content-Length가 2MB를 넘는 썸네일은 받지 않고 썸네일 없이 응답한다")
+  void findByIsbn_thumbnailOverLimitWithLength() throws Exception {
+    assertThumbnailIsNull(new byte[2_000_001], false, 0);
+  }
+
+  @Test
+  @DisplayName("Content-Length 없이 2MB를 넘게 보내도 상한까지만 읽고 썸네일 없이 응답한다")
+  void findByIsbn_thumbnailOverLimitChunked() throws Exception {
+    assertThumbnailIsNull(new byte[2_000_001], true, 0);
+  }
+
+  @Test
+  @DisplayName("헤더는 바로 오고 본문이 3초 안에 다 오지 않으면 썸네일 없이 응답한다")
+  void findByIsbn_thumbnailSlowBody() throws Exception {
+    assertThumbnailIsNull(new byte[10], false, 4_000);
+  }
+
+  // chunked면 Content-Length 없이 보낸다. delayMillis만큼 헤더를 보낸 뒤 기다렸다가 본문을 쓴다
+  private void assertThumbnailIsNull(byte[] body, boolean chunked, long delayMillis)
+      throws Exception {
+    HttpServer thumbServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+    thumbServer.createContext(
+        "/thumb.jpg",
+        exchange -> {
+          exchange.sendResponseHeaders(200, chunked ? 0 : body.length);
+          try (OutputStream out = exchange.getResponseBody()) {
+            Thread.sleep(delayMillis);
+            out.write(body);
+          } catch (InterruptedException | IOException ignored) {
+            // 클라이언트가 먼저 끊으면 쓰기가 실패한다
+          }
+        });
+    thumbServer.start();
+    try {
+      String url = "http://127.0.0.1:" + thumbServer.getAddress().getPort() + "/thumb.jpg";
+      server
+          .expect(requestTo(SEARCH_URL))
+          .andRespond(withSuccess(kakaoJson(url), MediaType.APPLICATION_JSON));
+
+      Optional<BookInfoDto> result = adapter.findByIsbn(Isbn.of("9788966260959"));
+
+      assertThat(result).isPresent();
+      assertThat(result.get().thumbnailImage()).isNull();
+    } finally {
+      thumbServer.stop(0);
+    }
   }
 }

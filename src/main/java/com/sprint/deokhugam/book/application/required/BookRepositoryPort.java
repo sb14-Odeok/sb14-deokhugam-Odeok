@@ -8,6 +8,7 @@ import java.util.UUID;
 // 도서 저장·단건 조회·중복 확인 (기본 CRUD). 조건 검색은 BookSearchPort
 public interface BookRepositoryPort {
 
+  // 바로 INSERT 한다. UNIQUE 제약에 걸리면 UniqueConstraintViolationException
   Book save(Book book);
 
   // 논리 삭제된 도서는 빼고 찾는다

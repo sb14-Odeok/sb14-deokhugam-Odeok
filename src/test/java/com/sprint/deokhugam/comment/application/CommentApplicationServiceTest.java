@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -13,12 +14,15 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.deokhugam.comment.application.dto.CommentCreateRequest;
 import com.sprint.deokhugam.comment.application.dto.CommentDto;
+import com.sprint.deokhugam.comment.application.dto.CommentSearchCondition;
 import com.sprint.deokhugam.comment.application.dto.CommentUpdateRequest;
 import com.sprint.deokhugam.comment.application.provided.command.CommentCommand;
 import com.sprint.deokhugam.comment.application.provided.query.CommentFinder;
+import com.sprint.deokhugam.comment.application.required.CommentSearchPort;
 import com.sprint.deokhugam.comment.domain.Comment;
 import com.sprint.deokhugam.common.exception.BusinessException;
 import com.sprint.deokhugam.common.exception.CommonErrorCode;
+import com.sprint.deokhugam.common.pagination.CursorPageResponse;
 import com.sprint.deokhugam.domain.comment.exception.CommentErrorCode;
 import com.sprint.deokhugam.notification.domain.NotifyEvent;
 import com.sprint.deokhugam.review.application.provided.command.ReviewCommand;
@@ -39,6 +43,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 public class CommentApplicationServiceTest {
@@ -48,6 +53,7 @@ public class CommentApplicationServiceTest {
   @Mock private UserFinder userFinder;
   @Mock private ReviewFinder reviewFinder;
   @Mock private ReviewCommand reviewCommand;
+  @Mock private CommentSearchPort commentSearchPort;
   @Mock private Review review;
   @Mock private User user;
   @Mock private ApplicationEventPublisher eventPublisher;
@@ -73,9 +79,9 @@ public class CommentApplicationServiceTest {
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
     given(reviewFinder.getByIdForUpdateOrThrow(reviewId)).willReturn(review);
-    given(review.getId()).willReturn(reviewId);
     given(userFinder.findByIdOrThrow(userId)).willReturn(user);
     given(review.getUser()).willReturn(user);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = Comment.create(review, user, createRequest.content());
     given(commentCommand.createComment(any(Comment.class))).willReturn(comment);
@@ -412,5 +418,68 @@ public class CommentApplicationServiceTest {
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
 
     verify(commentCommand, never()).deleteAllByReviewIds(any());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 성공 - limit보다 많으면 다음 페이지가 있다")
+  void searchCommentsByPagination_hasNext() {
+    // Given
+    CommentSearchCondition condition =
+        new CommentSearchCondition(reviewId, Sort.Direction.DESC, null, null, 1);
+    Comment first = Comment.create(review, user, "firstContent");
+    Comment second = Comment.create(review, user, "secondContent");
+
+    given(commentSearchPort.search(condition)).willReturn(List.of(first, second));
+    given(commentSearchPort.count(condition)).willReturn(2L);
+
+    // When
+    CursorPageResponse<CommentDto> result =
+        commentApplicationService.searchCommentsByPagination(condition);
+
+    // Then
+    assertThat(result.content().size()).isEqualTo(1);
+    assertThat(result.content().get(0).content()).isEqualTo("firstContent");
+    assertThat(result.hasNext()).isTrue();
+    assertThat(result.totalElements()).isEqualTo(2L);
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 성공 - limit 이하면 다음 페이지가 없다")
+  void searchCommentsByPagination_noNext() {
+    // Given
+    CommentSearchCondition condition =
+        new CommentSearchCondition(reviewId, Sort.Direction.DESC, null, null, 2);
+    Comment comment = Comment.create(review, user, "testContent");
+
+    given(commentSearchPort.search(condition)).willReturn(List.of(comment));
+    given(commentSearchPort.count(condition)).willReturn(1L);
+
+    // When
+    CursorPageResponse<CommentDto> result =
+        commentApplicationService.searchCommentsByPagination(condition);
+
+    // Then
+    assertThat(result.hasNext()).isFalse();
+    assertThat(result.nextCursor()).isNull();
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - 리뷰를 찾지 못한 경우")
+  void searchCommentsByPagination_fail_reviewNotFound() {
+    // Given
+    CommentSearchCondition condition =
+        new CommentSearchCondition(reviewId, Sort.Direction.DESC, null, null, 1);
+
+    willThrow(new BusinessException(ReviewErrorCode.NOT_FOUND))
+        .given(reviewFinder)
+        .requireActiveById(reviewId);
+
+    // When & Then
+    assertThatThrownBy(() -> commentApplicationService.searchCommentsByPagination(condition))
+        .isInstanceOf(BusinessException.class)
+        .extracting("errorCode")
+        .isEqualTo(ReviewErrorCode.NOT_FOUND);
+
+    verify(commentSearchPort, never()).search(any());
   }
 }
