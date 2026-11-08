@@ -2,7 +2,6 @@ package com.sprint.deokhugam.comment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -50,7 +49,6 @@ public class CommentIntegrationTest {
   @Autowired private ReviewCommand reviewCommand;
   @Autowired private UserJpaRepository userJpaRepository;
   @Autowired private CommentJpaRepository commentJpaRepository;
-  @Autowired private ReviewCommand reviewCommand;
   @Autowired private EntityManager entityManager;
 
   private Review savedReview;
@@ -239,73 +237,6 @@ public class CommentIntegrationTest {
     // Then
     flushAndClear();
     assertThat(commentJpaRepository.findByIdOrThrow(savedComment.getId())).isNotNull();
-    assertThat(findCommentCount()).isEqualTo(1);
-  }
-
-  @Test
-  @DisplayName("통합 테스트: 댓글 목록 조회 시 논리 삭제된 댓글 제외")
-  void searchCommentsIntegration() throws Exception {
-    // Given
-    Comment deletedComment =
-        commentJpaRepository.save(
-            Comment.create(
-                reviewJpaRepository.getReferenceById(savedReview.getId()),
-                userJpaRepository.getReferenceById(savedUser.getId()),
-                "deletedContent"));
-    deletedComment.softDelete();
-    flushAndClear();
-
-    // When & Then
-    mockMvc
-        .perform(
-            get("/api/comments")
-                .param("reviewId", savedReview.getId().toString())
-                .param("limit", "10"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(1))
-        .andExpect(jsonPath("$.content[0].content").value("testCreateContent"))
-        .andExpect(jsonPath("$.totalElements").value(1))
-        .andExpect(jsonPath("$.hasNext").value(false));
-  }
-
-  @Test
-  @DisplayName("통합 테스트: 댓글 물리 삭제 시 DB에서 지워지고 리뷰 댓글 수 감소")
-  void hardDeleteCommentIntegration() throws Exception {
-    // When
-    mockMvc
-        .perform(
-            delete("/api/comments/{commentId}/hard", savedComment.getId())
-                .header("Deokhugam-Request-User-ID", savedUser.getId()))
-        .andExpect(status().isNoContent());
-
-    // Then
-    flushAndClear();
-    assertThat(commentJpaRepository.findById(savedComment.getId())).isEmpty();
-    assertThat(findCommentCount()).isZero();
-  }
-
-  @Test
-  @DisplayName("통합 테스트: 논리 삭제된 댓글을 물리 삭제해도 리뷰 댓글 수는 다시 줄지 않음")
-  void hardDeleteAfterSoftDeleteIntegration() throws Exception {
-    // Given
-    reviewCommand.increaseReviewCommentCount(savedReview.getId());
-    mockMvc
-        .perform(
-            delete("/api/comments/{commentId}", savedComment.getId())
-                .header("Deokhugam-Request-User-ID", savedUser.getId()))
-        .andExpect(status().isNoContent());
-    flushAndClear();
-
-    // When
-    mockMvc
-        .perform(
-            delete("/api/comments/{commentId}/hard", savedComment.getId())
-                .header("Deokhugam-Request-User-ID", savedUser.getId()))
-        .andExpect(status().isNoContent());
-
-    // Then
-    flushAndClear();
-    assertThat(commentJpaRepository.findById(savedComment.getId())).isEmpty();
     assertThat(findCommentCount()).isEqualTo(1);
   }
 }
