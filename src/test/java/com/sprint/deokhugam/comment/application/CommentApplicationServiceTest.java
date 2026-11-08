@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willDoNothing;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -13,17 +14,21 @@ import static org.mockito.Mockito.verify;
 
 import com.sprint.deokhugam.comment.application.dto.CommentCreateRequest;
 import com.sprint.deokhugam.comment.application.dto.CommentDto;
+import com.sprint.deokhugam.comment.application.dto.CommentSearchCondition;
 import com.sprint.deokhugam.comment.application.dto.CommentUpdateRequest;
 import com.sprint.deokhugam.comment.application.provided.command.CommentCommand;
 import com.sprint.deokhugam.comment.application.provided.query.CommentFinder;
+import com.sprint.deokhugam.comment.application.required.CommentSearchPort;
 import com.sprint.deokhugam.comment.domain.Comment;
 import com.sprint.deokhugam.common.exception.BusinessException;
 import com.sprint.deokhugam.common.exception.CommonErrorCode;
+import com.sprint.deokhugam.common.pagination.CursorPageResponse;
 import com.sprint.deokhugam.domain.comment.exception.CommentErrorCode;
-import com.sprint.deokhugam.domain.review.exception.ReviewErrorCode;
 import com.sprint.deokhugam.notification.domain.NotifyEvent;
+import com.sprint.deokhugam.review.application.provided.command.ReviewCommand;
 import com.sprint.deokhugam.review.application.provided.query.ReviewFinder;
 import com.sprint.deokhugam.review.domain.Review;
+import com.sprint.deokhugam.review.domain.exception.ReviewErrorCode;
 import com.sprint.deokhugam.user.application.provided.query.UserFinder;
 import com.sprint.deokhugam.user.domain.User;
 import com.sprint.deokhugam.user.domain.exception.UserErrorCode;
@@ -38,6 +43,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 public class CommentApplicationServiceTest {
@@ -46,6 +52,8 @@ public class CommentApplicationServiceTest {
   @Mock private CommentFinder commentFinder;
   @Mock private UserFinder userFinder;
   @Mock private ReviewFinder reviewFinder;
+  @Mock private ReviewCommand reviewCommand;
+  @Mock private CommentSearchPort commentSearchPort;
   @Mock private Review review;
   @Mock private User user;
   @Mock private ApplicationEventPublisher eventPublisher;
@@ -70,9 +78,10 @@ public class CommentApplicationServiceTest {
     CommentCreateRequest createRequest =
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
-    given(reviewFinder.getByIdOrThrow(reviewId)).willReturn(review);
+    given(reviewFinder.getByIdForUpdateOrThrow(reviewId)).willReturn(review);
     given(userFinder.findByIdOrThrow(userId)).willReturn(user);
     given(review.getUser()).willReturn(user);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = Comment.create(review, user, createRequest.content());
     given(commentCommand.createComment(any(Comment.class))).willReturn(comment);
@@ -84,7 +93,7 @@ public class CommentApplicationServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.content()).isEqualTo("testCreateContent");
     verify(commentCommand).createComment(any(Comment.class));
-    verify(review).increaseCommentCount();
+    verify(reviewCommand).increaseReviewCommentCount(reviewId);
     verify(eventPublisher).publishEvent(any(NotifyEvent.class));
     verify(eventPublisher).publishEvent(any(ActivityEvent.class));
   }
@@ -113,7 +122,7 @@ public class CommentApplicationServiceTest {
     CommentCreateRequest createRequest =
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
-    given(reviewFinder.getByIdOrThrow(reviewId))
+    given(reviewFinder.getByIdForUpdateOrThrow(reviewId))
         .willThrow(new BusinessException(ReviewErrorCode.NOT_FOUND));
 
     // When & Then
@@ -194,6 +203,7 @@ public class CommentApplicationServiceTest {
     // Given
     given(user.getId()).willReturn(userId);
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = Comment.create(review, user, "testCreateContent");
     given(commentFinder.findById(commentId)).willReturn(comment);
@@ -203,7 +213,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     assertThat(comment.isDeleted()).isTrue();
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -221,7 +231,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     assertThat(comment.isDeleted()).isTrue();
-    verify(review, never()).decreaseCommentCount();
+    verify(reviewCommand, never()).decreaseReviewCommentCount(any());
   }
 
   @Test
@@ -241,7 +251,7 @@ public class CommentApplicationServiceTest {
         .isEqualTo(CommentErrorCode.FORBIDDEN);
 
     assertThat(comment.isDeleted()).isFalse();
-    verify(review, never()).decreaseCommentCount();
+    verify(reviewCommand, never()).decreaseReviewCommentCount(any());
   }
 
   @Test
@@ -250,6 +260,7 @@ public class CommentApplicationServiceTest {
     // Given
     given(user.getId()).willReturn(userId);
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = spy(Comment.create(review, user, "testCreateContent"));
     given(comment.getId()).willReturn(commentId);
@@ -263,7 +274,7 @@ public class CommentApplicationServiceTest {
     // Then
     verify(commentFinder).findByIdIncludingDeleted(commentId);
     verify(commentCommand).hardDelete(commentId);
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -285,7 +296,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     verify(commentCommand).hardDelete(commentId);
-    verify(review, never()).decreaseCommentCount();
+    verify(reviewCommand, never()).decreaseReviewCommentCount(any());
   }
 
   @Test
@@ -312,6 +323,7 @@ public class CommentApplicationServiceTest {
   void deleteCommentsByUser_success() {
     // Given
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = Comment.create(review, user, "testCreateContent");
     given(commentFinder.findAllByUserId(userId)).willReturn(List.of(comment));
@@ -322,7 +334,7 @@ public class CommentApplicationServiceTest {
     // Then
     verify(commentFinder).findAllByUserId(userId);
     verify(commentCommand).deleteAllByUserId(userId);
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -330,6 +342,7 @@ public class CommentApplicationServiceTest {
   void deleteCommentsByUser_success_skipSoftDeleted() {
     // Given
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment activeComment = Comment.create(review, user, "testActiveContent");
     Comment deletedComment = Comment.create(review, user, "testDeletedContent");
@@ -342,7 +355,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     verify(commentCommand).deleteAllByUserId(userId);
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -405,5 +418,68 @@ public class CommentApplicationServiceTest {
         .isEqualTo(CommonErrorCode.INVALID_INPUT);
 
     verify(commentCommand, never()).deleteAllByReviewIds(any());
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 성공 - limit보다 많으면 다음 페이지가 있다")
+  void searchCommentsByPagination_hasNext() {
+    // Given
+    CommentSearchCondition condition =
+        new CommentSearchCondition(reviewId, Sort.Direction.DESC, null, null, 1);
+    Comment first = Comment.create(review, user, "firstContent");
+    Comment second = Comment.create(review, user, "secondContent");
+
+    given(commentSearchPort.search(condition)).willReturn(List.of(first, second));
+    given(commentSearchPort.count(condition)).willReturn(2L);
+
+    // When
+    CursorPageResponse<CommentDto> result =
+        commentApplicationService.searchCommentsByPagination(condition);
+
+    // Then
+    assertThat(result.content().size()).isEqualTo(1);
+    assertThat(result.content().get(0).content()).isEqualTo("firstContent");
+    assertThat(result.hasNext()).isTrue();
+    assertThat(result.totalElements()).isEqualTo(2L);
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 성공 - limit 이하면 다음 페이지가 없다")
+  void searchCommentsByPagination_noNext() {
+    // Given
+    CommentSearchCondition condition =
+        new CommentSearchCondition(reviewId, Sort.Direction.DESC, null, null, 2);
+    Comment comment = Comment.create(review, user, "testContent");
+
+    given(commentSearchPort.search(condition)).willReturn(List.of(comment));
+    given(commentSearchPort.count(condition)).willReturn(1L);
+
+    // When
+    CursorPageResponse<CommentDto> result =
+        commentApplicationService.searchCommentsByPagination(condition);
+
+    // Then
+    assertThat(result.hasNext()).isFalse();
+    assertThat(result.nextCursor()).isNull();
+  }
+
+  @Test
+  @DisplayName("댓글 목록 조회 실패 - 리뷰를 찾지 못한 경우")
+  void searchCommentsByPagination_fail_reviewNotFound() {
+    // Given
+    CommentSearchCondition condition =
+        new CommentSearchCondition(reviewId, Sort.Direction.DESC, null, null, 1);
+
+    willThrow(new BusinessException(ReviewErrorCode.NOT_FOUND))
+        .given(reviewFinder)
+        .requireActiveById(reviewId);
+
+    // When & Then
+    assertThatThrownBy(() -> commentApplicationService.searchCommentsByPagination(condition))
+        .isInstanceOf(BusinessException.class)
+        .extracting("errorCode")
+        .isEqualTo(ReviewErrorCode.NOT_FOUND);
+
+    verify(commentSearchPort, never()).search(any());
   }
 }
