@@ -13,7 +13,7 @@ public class NotificationScheduler {
 
   private final NotificationCleaner notificationCleaner;
 
-  @Scheduled(cron = "0 */5 * * * *", zone = "Asia/Seoul")
+  @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul")
   public void scheduledDelete() {
     Instant cutoff = Instant.now().minus(Duration.ofMinutes(5));
     notificationCleaner.deleteConfirmed(cutoff);

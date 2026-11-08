@@ -45,7 +45,6 @@ public class UserBatchConfig {
                   userCleanupUseCase.cleanupUserWithRelatedData(userId);
                 } catch (RuntimeException e) {
                   log.error("삭제 실패 유저 id = {}", userId, e);
-                  throw e;
                 }
               }
             })

@@ -17,7 +17,7 @@ public class UserCleanupScheduler {
   private final JobOperator jobOperator;
   private final Job userCleanupJob;
 
-  @Scheduled(cron = "0 */5 * * * *", zone = "Asia/Seoul")
+  @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Seoul")
   public void cleanup() {
     JobParameters parameters =
         new JobParametersBuilder()
