@@ -1,8 +1,8 @@
 package com.sprint.deokhugam.book.adapter.api.ocrspace;
 
 import com.sprint.deokhugam.book.application.required.OcrTextPort;
+import com.sprint.deokhugam.book.domain.exception.BookErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.book.exception.BookErrorCode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ByteArrayResource;
