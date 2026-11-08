@@ -7,6 +7,7 @@ import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.deokhugam.common.exception.BusinessException;
 import com.sprint.deokhugam.common.exception.CommonErrorCode;
@@ -120,8 +121,7 @@ public class ReviewQuerydslRepository {
      SELECT * FROM reviews
       WHERE deleted_at IS NULL
         AND ( ---------- 커서 컨디션
-          rating < 4
-          OR (rating = 4 AND created_at < '날짜')
+          (rating, created_at) < (4, '날짜')
         )
       ORDER BY rating/생성일 디렉션, rating/생성일 디렉션
       LIMIT 사이즈 + 1;
@@ -188,10 +188,10 @@ public class ReviewQuerydslRepository {
     // 평점 기준으로 정렬되어 있을 경우
     if (ORDER_BY_RATING.equals(orderBy)) {
       int lastRating = Integer.parseInt(cursor);
-      BooleanExpression nextRating =
-          asc ? review.rating.gt(lastRating) : review.rating.lt(lastRating);
-      BooleanExpression nextTime = asc ? review.createdAt.gt(after) : review.createdAt.lt(after);
-      return nextRating.or(review.rating.eq(lastRating).and(nextTime));
+      // OR로 풀어 쓰면 idx_reviews_rating_created_at_id를 범위로 타지 못해서 행 비교로 쓴다
+      String rowCompare = asc ? "({0}, {1}) > ({2}, {3})" : "({0}, {1}) < ({2}, {3})";
+      return Expressions.booleanTemplate(
+          rowCompare, review.rating, review.createdAt, lastRating, after);
     }
 
     // 생성일 기준으로 정렬되어 있을 경우 - 애프터 필요없음

@@ -10,6 +10,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -20,7 +21,18 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "notifications")
+@Table(
+    name = "notifications",
+    indexes = {
+      @Index(
+          name = "idx_notifications_user_created_at_id",
+          columnList = "user_id, created_at DESC, id DESC"),
+      @Index(name = "idx_notifications_review_id", columnList = "review_id"),
+      @Index(
+          name = "idx_notifications_confirmed_at",
+          columnList = "confirmed_at",
+          options = "WHERE confirmed = true")
+    })
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Notification extends BaseSoftDeletableEntity {
 

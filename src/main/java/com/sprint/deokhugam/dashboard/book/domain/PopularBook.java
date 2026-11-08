@@ -9,6 +9,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -29,7 +30,8 @@ import lombok.experimental.FieldDefaults;
 @Entity
 @Table(
     name = "popular_books",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"period", "base_date", "book_id"}))
+    uniqueConstraints = @UniqueConstraint(columnNames = {"period", "base_date", "book_id"}),
+    indexes = @Index(name = "idx_popular_books_book_id", columnList = "book_id"))
 public class PopularBook extends BaseEntity {
 
   private static final double REVIEW_COUNT_WEIGHT = 0.4;
