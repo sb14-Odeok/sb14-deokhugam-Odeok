@@ -228,8 +228,8 @@ public class PopularReviewRepositoryTest {
   }
 
   @Test
-  @DisplayName("활동 집계 - 취소된 좋아요와 논리 삭제된 댓글은 세지 않는다")
-  void findReviewActivities_excludeCanceledLikeAndDeletedComment() {
+  @DisplayName("활동 집계 - 취소된 좋아요는 세지 않고, 논리 삭제된 댓글은 센다")
+  void findReviewActivities_excludeCanceledLikeAndIncludeDeletedComment() {
     // Given
     Review review = persistReview("testReview");
     ReviewLike canceledLike = ReviewLike.init(review, persistUser());
@@ -249,7 +249,7 @@ public class PopularReviewRepositoryTest {
 
     // Then
     assertThat(activity.likeCount()).isZero();
-    assertThat(activity.commentCount()).isEqualTo(1L);
+    assertThat(activity.commentCount()).isEqualTo(2L);
   }
 
   @Test
@@ -287,11 +287,35 @@ public class PopularReviewRepositoryTest {
             now.minus(14, ChronoUnit.DAYS), now.minus(7, ChronoUnit.DAYS));
 
     // When
-    ReviewActivity activity = activitiesByReviewId(lastWeek).get(review.getId());
+    Map<UUID, ReviewActivity> activities = activitiesByReviewId(lastWeek);
+
+    // Then: 기간 안에 활동이 없는 리뷰는 결과에 없다
+    assertThat(activities).doesNotContainKey(review.getId());
+  }
+
+  @Test
+  @DisplayName("활동 집계 - 좋아요만 있는 리뷰와 댓글만 있는 리뷰를 모두 포함한다")
+  void findReviewActivities_likeOnlyAndCommentOnly() {
+    // Given
+    Review likeOnlyReview = persistReview("likeOnlyReview");
+    persistLikes(likeOnlyReview, 2);
+    Review commentOnlyReview = persistReview("commentOnlyReview");
+    persistComments(commentOnlyReview, 3);
+    entityManager.flush();
+    entityManager.clear();
+
+    // When
+    Map<UUID, ReviewActivity> activities =
+        activitiesByReviewId(PopularReviewPeriod.ALL_TIME.rangeOf(LocalDate.now()));
 
     // Then
-    assertThat(activity.likeCount()).isZero();
-    assertThat(activity.commentCount()).isZero();
+    ReviewActivity likeOnly = activities.get(likeOnlyReview.getId());
+    assertThat(likeOnly.likeCount()).isEqualTo(2L);
+    assertThat(likeOnly.commentCount()).isZero();
+
+    ReviewActivity commentOnly = activities.get(commentOnlyReview.getId());
+    assertThat(commentOnly.likeCount()).isZero();
+    assertThat(commentOnly.commentCount()).isEqualTo(3L);
   }
 
   @Test
