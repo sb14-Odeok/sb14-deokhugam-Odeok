@@ -146,7 +146,7 @@ public class PopularReviewQuerydslSearchAdapter implements PopularReviewSearchPo
                 tuple -> tuple.get(reviewLike.review.id), tuple -> tuple.get(likeCount)));
   }
 
-  // 삭제된 리뷰·댓글은 제외
+  // 삭제된 리뷰는 제외. 논리 삭제된 댓글은 점수에 포함
   private Map<UUID, Long> countCommentsByReview(PopularReviewPeriod.Range range) {
     NumberExpression<Long> commentCount = comment.count();
 
@@ -154,10 +154,7 @@ public class PopularReviewQuerydslSearchAdapter implements PopularReviewSearchPo
         .select(comment.review.id, commentCount)
         .from(comment)
         .join(comment.review, review)
-        .where(
-            review.deletedAt.isNull(),
-            comment.deletedAt.isNull(),
-            inPeriod(comment.createdAt, range))
+        .where(review.deletedAt.isNull(), inPeriod(comment.createdAt, range))
         .groupBy(comment.review.id)
         .fetch()
         .stream()

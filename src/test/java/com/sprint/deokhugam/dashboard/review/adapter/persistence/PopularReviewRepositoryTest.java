@@ -228,8 +228,8 @@ public class PopularReviewRepositoryTest {
   }
 
   @Test
-  @DisplayName("활동 집계 - 취소된 좋아요와 논리 삭제된 댓글은 세지 않는다")
-  void findReviewActivities_excludeCanceledLikeAndDeletedComment() {
+  @DisplayName("활동 집계 - 취소된 좋아요는 세지 않고, 논리 삭제된 댓글은 센다")
+  void findReviewActivities_excludeCanceledLikeAndIncludeDeletedComment() {
     // Given
     Review review = persistReview("testReview");
     ReviewLike canceledLike = ReviewLike.init(review, persistUser());
@@ -249,7 +249,7 @@ public class PopularReviewRepositoryTest {
 
     // Then
     assertThat(activity.likeCount()).isZero();
-    assertThat(activity.commentCount()).isEqualTo(1L);
+    assertThat(activity.commentCount()).isEqualTo(2L);
   }
 
   @Test
