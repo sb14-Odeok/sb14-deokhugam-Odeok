@@ -11,7 +11,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.DateTimePath;
-import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import com.sprint.deokhugam.dashboard.review.application.dto.PopularReviewDto;
 import com.sprint.deokhugam.dashboard.review.application.dto.PopularReviewSearchCondition;
@@ -19,8 +19,12 @@ import com.sprint.deokhugam.dashboard.review.application.dto.ReviewActivity;
 import com.sprint.deokhugam.dashboard.review.application.required.PopularReviewSearchPort;
 import com.sprint.deokhugam.dashboard.review.domain.PopularReviewPeriod;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -101,33 +105,62 @@ public class PopularReviewQuerydslSearchAdapter implements PopularReviewSearchPo
         : popularReview.rank.lt(condition.cursor());
   }
 
-  // 리뷰마다 기간 안에 받은 좋아요 수, 댓글 수를 한 번의 쿼리로 센다
-  // (삭제된 리뷰·댓글, 취소된 좋아요는 제외)
+  // 활동 없는 리뷰는 제외
   @Override
   public List<ReviewActivity> findReviewActivities(PopularReviewPeriod.Range range) {
+    Map<UUID, Long> likeCounts = countLikesByReview(range);
+    Map<UUID, Long> commentCounts = countCommentsByReview(range);
+
+    Set<UUID> reviewIds = new HashSet<>(likeCounts.keySet());
+    reviewIds.addAll(commentCounts.keySet());
+
+    // 좋아요 수와 댓글 수를 리뷰별로 묶어서 센 뒤 합친다
+    return reviewIds.stream()
+        .map(
+            reviewId ->
+                new ReviewActivity(
+                    reviewId,
+                    // reviewId가 없다면 0 반환
+                    likeCounts.getOrDefault(reviewId, 0L),
+                    commentCounts.getOrDefault(reviewId, 0L)))
+        .toList();
+  }
+
+  // 삭제된 리뷰, 취소된 좋아요는 제외
+  private Map<UUID, Long> countLikesByReview(PopularReviewPeriod.Range range) {
+    NumberExpression<Long> likeCount = reviewLike.count();
+
     return queryFactory
-        .select(
-            Projections.constructor(
-                ReviewActivity.class,
-                review.id,
-                // 이 리뷰의 좋아요 수
-                // JPAExpressions는 서브쿼리에서 사용
-                JPAExpressions.select(reviewLike.count())
-                    .from(reviewLike)
-                    .where(
-                        reviewLike.review.id.eq(review.id),
-                        reviewLike.liked.isTrue(),
-                        inPeriod(reviewLike.createdAt, range)),
-                // 이 리뷰의 댓글 수
-                JPAExpressions.select(comment.count())
-                    .from(comment)
-                    .where(
-                        comment.review.id.eq(review.id),
-                        comment.deletedAt.isNull(),
-                        inPeriod(comment.createdAt, range))))
-        .from(review)
-        .where(review.deletedAt.isNull())
-        .fetch();
+        .select(reviewLike.review.id, likeCount)
+        .from(reviewLike)
+        .join(reviewLike.review, review)
+        .where(
+            review.deletedAt.isNull(),
+            reviewLike.liked.isTrue(),
+            inPeriod(reviewLike.createdAt, range))
+        .groupBy(reviewLike.review.id)
+        .fetch()
+        .stream()
+        .collect(
+            Collectors.toMap(
+                tuple -> tuple.get(reviewLike.review.id), tuple -> tuple.get(likeCount)));
+  }
+
+  // 삭제된 리뷰는 제외. 논리 삭제된 댓글은 점수에 포함
+  private Map<UUID, Long> countCommentsByReview(PopularReviewPeriod.Range range) {
+    NumberExpression<Long> commentCount = comment.count();
+
+    return queryFactory
+        .select(comment.review.id, commentCount)
+        .from(comment)
+        .join(comment.review, review)
+        .where(review.deletedAt.isNull(), inPeriod(comment.createdAt, range))
+        .groupBy(comment.review.id)
+        .fetch()
+        .stream()
+        .collect(
+            Collectors.toMap(
+                tuple -> tuple.get(comment.review.id), tuple -> tuple.get(commentCount)));
   }
 
   @Override

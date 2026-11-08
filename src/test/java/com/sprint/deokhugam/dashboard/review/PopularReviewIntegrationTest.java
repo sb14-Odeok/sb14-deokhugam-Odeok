@@ -90,8 +90,10 @@ public class PopularReviewIntegrationTest {
     commentJpaRepository.save(Comment.create(popularReview, writer, "comment2"));
 
     // 오늘 생긴 활동이 일간 순위에 들어가도록, 내일 0시에 배치가 돈 것처럼 집계
-    popularReviewUseCase.aggregatePopularReviews(
-        LocalDate.now(PopularReviewPeriod.ZONE).plusDays(1));
+    LocalDate baseDate = LocalDate.now(PopularReviewPeriod.ZONE).plusDays(1);
+    for (PopularReviewPeriod period : PopularReviewPeriod.values()) {
+      popularReviewUseCase.aggregatePopularReviews(period, baseDate);
+    }
   }
 
   private User saveUser() {

@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.sprint.deokhugam.common.pagination.CursorPageResponse;
 import com.sprint.deokhugam.dashboard.review.application.dto.PopularReviewDto;
@@ -114,19 +115,18 @@ public class PopularReviewApplicationServiceTest {
   }
 
   @Test
-  @DisplayName("인기 리뷰 집계 - 모든 기간을 각각 집계해서 저장")
-  void aggregatePopularReviews_allPeriods() {
+  @DisplayName("인기 리뷰 집계 - 요청한 기간만 집계해서 저장")
+  void aggregatePopularReviews_onlyRequestedPeriod() {
     // Given
     given(searchPort.findReviewActivities(any())).willReturn(List.of());
 
     // When
-    popularReviewApplicationService.aggregatePopularReviews(BASE_DATE);
+    popularReviewApplicationService.aggregatePopularReviews(PopularReviewPeriod.WEEKLY, BASE_DATE);
 
     // Then
-    for (PopularReviewPeriod period : PopularReviewPeriod.values()) {
-      verify(searchPort).findReviewActivities(period.rangeOf(BASE_DATE));
-      verify(persistencePort).replaceAll(eq(period), anyList());
-    }
+    verify(searchPort).findReviewActivities(PopularReviewPeriod.WEEKLY.rangeOf(BASE_DATE));
+    verify(persistencePort).replaceAll(eq(PopularReviewPeriod.WEEKLY), anyList());
+    verifyNoMoreInteractions(persistencePort);
   }
 
   @Test
@@ -139,7 +139,7 @@ public class PopularReviewApplicationServiceTest {
     given(searchPort.findReviewActivities(any())).willReturn(List.of(low, high, middle));
 
     // When
-    popularReviewApplicationService.aggregatePopularReviews(BASE_DATE);
+    popularReviewApplicationService.aggregatePopularReviews(PopularReviewPeriod.DAILY, BASE_DATE);
 
     // Then
     List<PopularReview> rankings = savedDailyRankings();
@@ -159,7 +159,7 @@ public class PopularReviewApplicationServiceTest {
     given(searchPort.findReviewActivities(any())).willReturn(List.of(manyLikes, manyComments));
 
     // When
-    popularReviewApplicationService.aggregatePopularReviews(BASE_DATE);
+    popularReviewApplicationService.aggregatePopularReviews(PopularReviewPeriod.DAILY, BASE_DATE);
 
     // Then
     List<PopularReview> rankings = savedDailyRankings();
@@ -176,7 +176,7 @@ public class PopularReviewApplicationServiceTest {
     given(searchPort.findReviewActivities(any())).willReturn(List.of(active, inactive));
 
     // When
-    popularReviewApplicationService.aggregatePopularReviews(BASE_DATE);
+    popularReviewApplicationService.aggregatePopularReviews(PopularReviewPeriod.DAILY, BASE_DATE);
 
     // Then
     List<PopularReview> rankings = savedDailyRankings();
@@ -195,7 +195,7 @@ public class PopularReviewApplicationServiceTest {
     given(searchPort.findReviewActivities(any())).willReturn(activities);
 
     // When
-    popularReviewApplicationService.aggregatePopularReviews(BASE_DATE);
+    popularReviewApplicationService.aggregatePopularReviews(PopularReviewPeriod.DAILY, BASE_DATE);
 
     // Then: 댓글 25개짜리가 1위, 댓글 6개짜리가 20위
     List<PopularReview> rankings = savedDailyRankings();

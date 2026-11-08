@@ -1,4 +1,4 @@
 package com.sprint.deokhugam.book.domain;
 
-// 썸네일 파일이 바뀌었다는 사실. 등록은 newKey만, 수정은 둘 다, 삭제는 previousKey만 있다
-public record ThumbnailChangedEvent(String newKey, String previousKey) {}
+// 수정으로 썸네일이 바뀌었다는 사실. 커밋 뒤 이전 파일을 지우는 데만 쓴다
+public record ThumbnailChangedEvent(String previousKey) {}
