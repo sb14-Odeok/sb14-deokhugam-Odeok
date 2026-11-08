@@ -14,8 +14,13 @@ import com.sprint.deokhugam.book.FakeBookSearchPort;
 import com.sprint.deokhugam.book.FakeOcrTextPort;
 import com.sprint.deokhugam.book.FakeReviewCommand;
 import com.sprint.deokhugam.book.FakeThumbnailStoragePort;
-import com.sprint.deokhugam.book.application.BookCommandService;
+import com.sprint.deokhugam.book.application.BookCreator;
+import com.sprint.deokhugam.book.application.BookInfoService;
 import com.sprint.deokhugam.book.application.BookQueryService;
+import com.sprint.deokhugam.book.application.BookRemoveService;
+import com.sprint.deokhugam.book.application.BookUpdater;
+import com.sprint.deokhugam.book.application.BookWriterApplicationService;
+import com.sprint.deokhugam.book.application.IsbnRecognitionService;
 import com.sprint.deokhugam.book.application.dto.BookInfoDto;
 import com.sprint.deokhugam.book.domain.Book;
 import com.sprint.deokhugam.book.domain.Isbn;
@@ -44,14 +49,15 @@ class BookControllerTest {
       MockMvcBuilders.standaloneSetup(
               new BookController(
                   // 이벤트는 받는 사람 없이 버린다. 파일 뒷정리는 ThumbnailCleanupListenerTest에서 본다
-                  new BookCommandService(
-                      bookRepositoryPort, thumbnailStoragePort, event -> {}, reviewCommand),
+                  new BookWriterApplicationService(
+                      thumbnailStoragePort,
+                      new BookCreator(bookRepositoryPort),
+                      new BookUpdater(bookRepositoryPort, event -> {})),
+                  new BookRemoveService(bookRepositoryPort, event -> {}, reviewCommand),
                   new BookQueryService(
-                      bookRepositoryPort,
-                      new FakeBookSearchPort(bookRepositoryPort),
-                      bookProviderPort,
-                      ocrTextPort,
-                      new IsbnExtractor())))
+                      bookRepositoryPort, new FakeBookSearchPort(bookRepositoryPort)),
+                  new BookInfoService(bookProviderPort),
+                  new IsbnRecognitionService(ocrTextPort, new IsbnExtractor())))
           .setControllerAdvice(new GlobalExceptionHandler())
           .build();
 

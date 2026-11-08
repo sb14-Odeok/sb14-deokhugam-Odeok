@@ -19,41 +19,13 @@ class ThumbnailCleanupListenerTest {
   @Test
   @DisplayName("커밋 뒤에는 이전 파일만 지운다")
   void commitDeletesPrevious() {
-    listener.deletePreviousOnCommit(new ThumbnailChangedEvent("books/new.png", "books/old.png"));
+    listener.deletePreviousOnCommit(new ThumbnailChangedEvent("books/old.png"));
 
     assertThat(thumbnailStoragePort.deletedKeys()).containsExactly("books/old.png");
   }
 
-  // (1-2)
-  @Test
-  @DisplayName("이전 파일이 없으면 커밋 뒤에 지울 것이 없다")
-  void commitWithoutPrevious() {
-    listener.deletePreviousOnCommit(new ThumbnailChangedEvent("books/new.png", null));
-
-    assertThat(thumbnailStoragePort.deletedKeys()).isEmpty();
-  }
-
-  // ===== (2) deleteNewOnRollback() =====
+  // ===== (2) deleteThumbnailOnBookDeleted() =====
   // (2-1)
-  @Test
-  @DisplayName("롤백 뒤에는 새 파일만 지운다")
-  void rollbackDeletesNew() {
-    listener.deleteNewOnRollback(new ThumbnailChangedEvent("books/new.png", "books/old.png"));
-
-    assertThat(thumbnailStoragePort.deletedKeys()).containsExactly("books/new.png");
-  }
-
-  // (2-2)
-  @Test
-  @DisplayName("새 파일이 없으면 롤백 뒤에 지울 것이 없다")
-  void rollbackWithoutNew() {
-    listener.deleteNewOnRollback(new ThumbnailChangedEvent(null, "books/old.png"));
-
-    assertThat(thumbnailStoragePort.deletedKeys()).isEmpty();
-  }
-
-  // ===== (3) deleteThumbnailOnBookDeleted() =====
-  // (3-1)
   @Test
   @DisplayName("도서가 지워진 뒤에는 그 썸네일 파일을 지운다")
   void bookDeletedDeletesThumbnail() {
@@ -62,7 +34,7 @@ class ThumbnailCleanupListenerTest {
     assertThat(thumbnailStoragePort.deletedKeys()).containsExactly("books/old.png");
   }
 
-  // (3-2)
+  // (2-2)
   @Test
   @DisplayName("썸네일이 없던 도서면 지울 것이 없다")
   void bookDeletedWithoutThumbnail() {

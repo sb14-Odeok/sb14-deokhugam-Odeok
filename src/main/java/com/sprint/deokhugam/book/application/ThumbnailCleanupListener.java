@@ -15,18 +15,10 @@ public class ThumbnailCleanupListener {
 
   private final ThumbnailStoragePort thumbnailStoragePort;
 
+  // 롤백되면 이 이벤트는 버려져 이전 파일이 남는다. 새 파일은 BookWriterApplicationService가 지운다
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void deletePreviousOnCommit(ThumbnailChangedEvent event) {
-    if (event.previousKey() != null) {
-      thumbnailStoragePort.delete(event.previousKey());
-    }
-  }
-
-  @TransactionalEventListener(phase = TransactionPhase.AFTER_ROLLBACK)
-  public void deleteNewOnRollback(ThumbnailChangedEvent event) {
-    if (event.newKey() != null) {
-      thumbnailStoragePort.delete(event.newKey());
-    }
+    thumbnailStoragePort.delete(event.previousKey());
   }
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
