@@ -11,6 +11,20 @@ jobs:
   build:
     name: Java 21 Build and Format Check
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: deokhugam_test
+          POSTGRES_USER: deokhugam
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U deokhugam -d deokhugam_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v4
@@ -20,10 +34,13 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Compile, package and check formatting
-        run: bash ./gradlew --no-daemon assemble spotlessCheck
-
-
+      - name: Compile, package, check formatting and run tests
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          POSTGRES_USER: deokhugam
+          POSTGRES_PASSWORD: test-password
+          RUN_USER_POSTGRES_TESTS: "true"
+        run: bash ./gradlew --no-daemon assemble spotlessCheck test
 
   commit-check:
     name: Commit Message Check

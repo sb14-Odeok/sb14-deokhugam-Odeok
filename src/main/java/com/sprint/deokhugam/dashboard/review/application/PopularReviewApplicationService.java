@@ -52,14 +52,7 @@ public class PopularReviewApplicationService implements PopularReviewUseCase {
 
   @Override
   @Transactional
-  public void aggregatePopularReviews(LocalDate baseDate) {
-    // 모든 집계 종류별 계산
-    for (PopularReviewPeriod period : PopularReviewPeriod.values()) {
-      aggregate(period, baseDate);
-    }
-  }
-
-  private void aggregate(PopularReviewPeriod period, LocalDate baseDate) {
+  public void aggregatePopularReviews(PopularReviewPeriod period, LocalDate baseDate) {
     PopularReviewPeriod.Range range = period.rangeOf(baseDate);
     List<ReviewActivity> activities = searchPort.findReviewActivities(range);
 

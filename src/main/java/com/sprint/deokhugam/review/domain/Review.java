@@ -8,6 +8,7 @@ import com.sprint.deokhugam.user.domain.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -26,7 +27,24 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder(access = AccessLevel.PRIVATE)
 @Entity
-@Table(name = "reviews")
+@Table(
+    name = "reviews",
+    indexes = {
+      @Index(
+          name = "idx_reviews_created_at_id",
+          columnList = "created_at DESC, id DESC",
+          options = "WHERE deleted_at IS NULL"),
+      @Index(
+          name = "idx_reviews_book_created_at_id",
+          columnList = "book_id, created_at DESC, id DESC"),
+      @Index(
+          name = "idx_reviews_user_created_at_id",
+          columnList = "user_id, created_at DESC, id DESC"),
+      @Index(
+          name = "idx_reviews_rating_created_at_id",
+          columnList = "rating DESC, created_at DESC, id DESC",
+          options = "WHERE deleted_at IS NULL")
+    })
 public class Review extends BaseSoftDeletableEntity {
 
   @Column(name = "rating", nullable = false)

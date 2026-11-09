@@ -1,8 +1,8 @@
 package com.sprint.deokhugam.comment.adapter.persistence;
 
 import com.sprint.deokhugam.comment.domain.Comment;
+import com.sprint.deokhugam.comment.domain.exception.CommentErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
-import com.sprint.deokhugam.domain.comment.exception.CommentErrorCode;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;

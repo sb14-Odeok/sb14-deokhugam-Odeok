@@ -17,13 +17,14 @@ import com.sprint.deokhugam.comment.application.dto.CommentUpdateRequest;
 import com.sprint.deokhugam.comment.application.provided.command.CommentCommand;
 import com.sprint.deokhugam.comment.application.provided.query.CommentFinder;
 import com.sprint.deokhugam.comment.domain.Comment;
+import com.sprint.deokhugam.comment.domain.exception.CommentErrorCode;
 import com.sprint.deokhugam.common.exception.BusinessException;
 import com.sprint.deokhugam.common.exception.CommonErrorCode;
-import com.sprint.deokhugam.domain.comment.exception.CommentErrorCode;
-import com.sprint.deokhugam.domain.review.exception.ReviewErrorCode;
 import com.sprint.deokhugam.notification.domain.NotifyEvent;
+import com.sprint.deokhugam.review.application.provided.command.ReviewCommand;
 import com.sprint.deokhugam.review.application.provided.query.ReviewFinder;
 import com.sprint.deokhugam.review.domain.Review;
+import com.sprint.deokhugam.review.domain.exception.ReviewErrorCode;
 import com.sprint.deokhugam.user.application.provided.query.UserFinder;
 import com.sprint.deokhugam.user.domain.User;
 import com.sprint.deokhugam.user.domain.exception.UserErrorCode;
@@ -46,6 +47,7 @@ public class CommentApplicationServiceTest {
   @Mock private CommentFinder commentFinder;
   @Mock private UserFinder userFinder;
   @Mock private ReviewFinder reviewFinder;
+  @Mock private ReviewCommand reviewCommand;
   @Mock private Review review;
   @Mock private User user;
   @Mock private ApplicationEventPublisher eventPublisher;
@@ -70,7 +72,8 @@ public class CommentApplicationServiceTest {
     CommentCreateRequest createRequest =
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
-    given(reviewFinder.getByIdOrThrow(reviewId)).willReturn(review);
+    given(reviewFinder.getByIdForUpdateOrThrow(reviewId)).willReturn(review);
+    given(review.getId()).willReturn(reviewId);
     given(userFinder.findByIdOrThrow(userId)).willReturn(user);
     given(review.getUser()).willReturn(user);
 
@@ -84,7 +87,7 @@ public class CommentApplicationServiceTest {
     assertThat(result).isNotNull();
     assertThat(result.content()).isEqualTo("testCreateContent");
     verify(commentCommand).createComment(any(Comment.class));
-    verify(review).increaseCommentCount();
+    verify(reviewCommand).increaseReviewCommentCount(reviewId);
     verify(eventPublisher).publishEvent(any(NotifyEvent.class));
     verify(eventPublisher).publishEvent(any(ActivityEvent.class));
   }
@@ -113,7 +116,7 @@ public class CommentApplicationServiceTest {
     CommentCreateRequest createRequest =
         new CommentCreateRequest(reviewId, userId, "testCreateContent");
 
-    given(reviewFinder.getByIdOrThrow(reviewId))
+    given(reviewFinder.getByIdForUpdateOrThrow(reviewId))
         .willThrow(new BusinessException(ReviewErrorCode.NOT_FOUND));
 
     // When & Then
@@ -194,6 +197,7 @@ public class CommentApplicationServiceTest {
     // Given
     given(user.getId()).willReturn(userId);
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = Comment.create(review, user, "testCreateContent");
     given(commentFinder.findById(commentId)).willReturn(comment);
@@ -203,7 +207,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     assertThat(comment.isDeleted()).isTrue();
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -221,7 +225,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     assertThat(comment.isDeleted()).isTrue();
-    verify(review, never()).decreaseCommentCount();
+    verify(reviewCommand, never()).decreaseReviewCommentCount(any());
   }
 
   @Test
@@ -241,7 +245,7 @@ public class CommentApplicationServiceTest {
         .isEqualTo(CommentErrorCode.FORBIDDEN);
 
     assertThat(comment.isDeleted()).isFalse();
-    verify(review, never()).decreaseCommentCount();
+    verify(reviewCommand, never()).decreaseReviewCommentCount(any());
   }
 
   @Test
@@ -250,6 +254,7 @@ public class CommentApplicationServiceTest {
     // Given
     given(user.getId()).willReturn(userId);
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = spy(Comment.create(review, user, "testCreateContent"));
     given(comment.getId()).willReturn(commentId);
@@ -263,7 +268,7 @@ public class CommentApplicationServiceTest {
     // Then
     verify(commentFinder).findByIdIncludingDeleted(commentId);
     verify(commentCommand).hardDelete(commentId);
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -285,7 +290,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     verify(commentCommand).hardDelete(commentId);
-    verify(review, never()).decreaseCommentCount();
+    verify(reviewCommand, never()).decreaseReviewCommentCount(any());
   }
 
   @Test
@@ -312,6 +317,7 @@ public class CommentApplicationServiceTest {
   void deleteCommentsByUser_success() {
     // Given
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment comment = Comment.create(review, user, "testCreateContent");
     given(commentFinder.findAllByUserId(userId)).willReturn(List.of(comment));
@@ -322,7 +328,7 @@ public class CommentApplicationServiceTest {
     // Then
     verify(commentFinder).findAllByUserId(userId);
     verify(commentCommand).deleteAllByUserId(userId);
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
@@ -330,6 +336,7 @@ public class CommentApplicationServiceTest {
   void deleteCommentsByUser_success_skipSoftDeleted() {
     // Given
     given(review.getCommentCount()).willReturn(1);
+    given(review.getId()).willReturn(reviewId);
 
     Comment activeComment = Comment.create(review, user, "testActiveContent");
     Comment deletedComment = Comment.create(review, user, "testDeletedContent");
@@ -342,7 +349,7 @@ public class CommentApplicationServiceTest {
 
     // Then
     verify(commentCommand).deleteAllByUserId(userId);
-    verify(review).decreaseCommentCount();
+    verify(reviewCommand).decreaseReviewCommentCount(reviewId);
   }
 
   @Test
